@@ -1,0 +1,20 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Georgia;
+}
+
+content {
+    display: flex;
+}
+
+#runSide, #sourceSide {
+    flex: 1
+}
+
+#source {
+    background-color: #eee;
+    margin: 1em 0;
+    padding: 1em;
+    white-space: pre-wrap;
+}

@@ -1,0 +1,45 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Web Adventure</title>
+    <link href="main.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <header>
+        <h1>Web Adventure</h1>
+    </header>
+
+    <content>
+        <div id="runSide">
+            <h2>Run</h2>
+            <button onclick="play()">Play</button>
+        </div>
+        <div id="sourceSide">
+            <h2>Source</h2>
+            <input type="text" id="sourceUrl" value="https://gist.githubusercontent.com/damieng/53406740db4af782c2375c63c4c62525/raw/e393f751be4c429e9d0dc0412744e9eb47e3aca4/magmoo11.unp"> <button onclick="loadSource()">Load</button>
+            <pre id="source" contenteditable>No source loaded.</pre>
+        </div>
+    </content>
+
+</body>
+
+<script src="../dist/combined.js"></script>
+<script>
+const byId = id => document.getElementById(id)
+loadSource();
+
+async function loadSource() {
+    byId('source').innerText = await PawReader.GetSource(byId('sourceUrl').value)
+}
+
+function play() {
+    const adventure = PawReader.Parse(byId('source').innerText.split('\n'));
+    console.log(adventure);
+}
+</script>
+
+</html>
