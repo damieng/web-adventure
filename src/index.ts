@@ -8,6 +8,14 @@ class GameLocation {
     }
 }
 
+class Glyph {
+    public Data: Array<number>;
+
+    constructor(data: Array<number>) {
+        this.Data = data;
+    }
+}
+
 class GameObject {
     public Description: string;
     public Words = new Map<string, number>();
@@ -42,6 +50,10 @@ class ProcessBlock {
 }
 
 class PawAdventureDefinition {
+    public Charsets = new Array<Array<Glyph>>();
+    public UserDefinedGraphics = new Array<Glyph>();
+    public Shade = new Array<Glyph>();
+
     public Defaults = new Defaults();
     public Locations = new Map<number, GameLocation>();
     public Messages = new Map<number, string>();
@@ -134,9 +146,16 @@ class PawReader {
 
             let newSection = sectionHeadings.get(line.toUpperCase());
             const processTokens = line.split(' ').filter(x => x !== '');
-            if (processTokens[0] === 'PROCESS') {
-                newSection = SourceSection.Process;
-                processNumber = parseInt(processTokens[1]);
+            switch(processTokens[0]) {
+                case 'PROCESS': {
+                    newSection = SourceSection.Process;
+                    processNumber = parseInt(processTokens[1]);
+                    break;
+                }
+                case 'Charset': {
+                    newSection = SourceSection.Charset;
+                    break;
+                }
             }
             if (newSection) {
                 section = newSection;
@@ -248,7 +267,7 @@ class PawReader {
                     let block: ProcessBlock = null;
                     do {
                         line = source[i];
-                        let tokens = line.split(' ').filter(x => x !== '');
+                        const tokens = line.split(' ').filter(x => x !== '');
                         if (tokens.length > 0) {
                             const isNewBlock= line[0] != ' ';
                             if (isNewBlock) {
@@ -259,6 +278,40 @@ class PawReader {
                             block.Commands.push(new Command(tokens.shift(), tokens.map(t => parseInt(t))));
                         }
                     } while(!source[++i].startsWith('------'));
+                    break;
+                }
+                case SourceSection.Charset: {
+                    let charIndex = 0;
+                    let charTable: Array<Glyph> = null;
+                    do {
+                        line = source[i];
+                        if (line.startsWith('static char ')) {
+                            charIndex = 0;
+                            const charId = line.substring(12, line.indexOf('['));
+                            switch(charId) {
+                                case 'udg_bits': {
+                                    charTable = adventure.UserDefinedGraphics;
+                                    break;
+                                }
+                                case 'shade_bits': {
+                                    charTable = adventure.Shade;
+                                    break;
+                                }
+                                default: {
+                                    charTable = new Array<Glyph>();
+                                    const fontIndex = parseInt(charId.substring(charId.lastIndexOf('_') + 1));
+                                    adventure.Charsets[fontIndex] = charTable;
+                                }
+                            }
+                        } else {
+                            const glyphTokens = line.split(',');
+                            if (glyphTokens.length > 7) {
+                                const glyphData = glyphTokens.map(t => parseInt(t)).filter(t => !isNaN(t));
+                                charTable[charIndex++] = new Glyph(glyphData);
+                            }
+                        }
+                    } while(++i < source.length);
+                    break;
                 }
             }
         }
