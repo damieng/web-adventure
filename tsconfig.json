@@ -3,12 +3,9 @@
         "target": "es6",
         "module": "system",
         "sourceMap": true,
-        "outFile": "combined.js"
+        "outFile": "dist/combined.js"
     },
     "include": [
         "src/*"
-    ],
-    "exclude": [
-        "dist/combined.js"
     ]
 }
