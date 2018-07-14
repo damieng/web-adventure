@@ -1,104 +1,4 @@
 
-class GameLocation {
-    public Description: string;
-    public Connections = new Map<string, number>();
-
-    constructor(description: string) {
-        this.Description = description;
-    }
-}
-
-class Glyph {
-    public Data: Array<number>;
-
-    constructor(data: Array<number>) {
-        this.Data = data;
-    }
-}
-
-class GameObject {
-    public Description: string;
-    public Words = new Map<string, number>();
-    public IsWearable: boolean;
-    public IsContainer: boolean;
-    public Weighs: number;
-
-    constructor(description: string) {
-        this.Description = description;
-    }
-}
-
-class Command {
-    public Action: string;
-    public References: Array<number>;
-
-    constructor(action: string, references: Array<number>) {
-        this.Action = action;
-        this.References = references;
-    }
-}
-
-class ProcessBlock {
-    public Verb: string;
-    public Noun: string;
-    public Commands = new Array<Command>();
-
-    constructor(verb: string, noun: string) {
-        this.Verb = verb;
-        this.Noun = noun;
-    }
-}
-
-class PawAdventureDefinition {
-    public Charsets = new Array<Array<Glyph>>();
-    public UserDefinedGraphics = new Array<Glyph>();
-    public Shade = new Array<Glyph>();
-
-    public Defaults = new Defaults();
-    public Locations = new Map<number, GameLocation>();
-    public Messages = new Map<number, string>();
-    public Meta = new Meta();
-    public Objects = new Map<number, GameObject>();
-    public Responses = new Map<string, Map<string, Array<Command>>>();
-    public ProcessTables = new Map<number, Array<ProcessBlock>>();
-    public SystemMessages = new Map<number, string>();
-    public Vocabulary = new Map<string, VocabDefinition>();
-}
-
-enum VocabType {
-    RESERVED,
-    Adjective,
-    Adverb,
-    Conjunction,
-    Noun,
-    Pronoun,
-    Preposition,
-    Verb
-}
-
-class VocabDefinition {
-    public Id: number;
-    public Type: VocabType;
-}
-
-class Defaults {
-    public CharacterSet: number;
-    public InkColor: number;
-    public PaperColor: number;
-    public FlashState: number;
-    public BrightState: number;
-    public InverseState: number;
-    public OverState: number;
-    public BorderColor: number;
-}
-
-class Meta {
-    public Extractor: string;
-    public DatabaseVersion: number;
-    public Compressed: boolean;
-    public SnapshotType: string;
-}
-
 enum SourceSection {
     Preamble,
     GeneralData,
@@ -199,7 +99,7 @@ class PawReader {
                     if (line.startsWith('Location')) {
                         const lineTokens = line.split(':');
                         const locationId = parseInt(lineTokens[0].substring(8));
-                        const location = PawReader.GetOrCreate(adventure.Locations, locationId, () => new GameLocation(''));
+                        const location = adventure.Locations.getOrCreate(locationId, () => new GameLocation(''));
 
                         let connection = lineTokens[1];
                         do {
@@ -220,7 +120,7 @@ class PawReader {
                     const tokens = line.split(' ').filter(x => x !== '');
                     if (tokens[0] === 'Object') {
                         const objectId = parseInt(tokens[1]);
-                        const object = PawReader.GetOrCreate(adventure.Objects, objectId, () => new GameObject(''));
+                        const object = adventure.Objects.getOrCreate(objectId, () => new GameObject(''));
                         for (var p = 2; p < tokens.length - 1; p += 2) {
                             if ((tokens[p] !== '_') && (tokens[p+1] !== '_')) {
                                 object.Words.set(tokens[p], parseInt(tokens[p+1]));
@@ -235,7 +135,7 @@ class PawReader {
                     const tokens = line.split(':');
                     if (tokens[0].startsWith('Object')) {
                         const objectId = parseInt(tokens[0].substring(6));
-                        const object = PawReader.GetOrCreate(adventure.Objects, objectId, () => new GameObject(''));
+                        const object = adventure.Objects.getOrCreate(objectId, () => new GameObject(''));
                         const weightTokens = tokens[1].split(' ').filter(x => x !== '');
                         if (weightTokens[0] === 'weights') {
                             object.Weighs = parseInt(weightTokens[1]);
@@ -252,8 +152,8 @@ class PawReader {
                 }
                 case SourceSection.ResponseTable: {
                     const tokens = line.split(' ').filter(x => x !== '');
-                    const nounTable = PawReader.GetOrCreate(adventure.Responses, tokens[0], () => new Map<string, Array<Command>>());
-                    const commands = PawReader.GetOrCreate(nounTable, tokens[1], () => new Array<Command>());
+                    const nounTable = adventure.Responses.getOrCreate(tokens[0], () => new Map<string, Array<Command>>());
+                    const commands = nounTable.getOrCreate(tokens[1], () => new Array<Command>());
 
                     let actionLine = tokens[2] + (tokens.length > 3 ? ' ' + tokens[3] : '');
                     do {
@@ -272,7 +172,7 @@ class PawReader {
                             const isNewBlock= line[0] != ' ';
                             if (isNewBlock) {
                                 block = new ProcessBlock(tokens.shift(), tokens.shift());
-                                const table = PawReader.GetOrCreate(adventure.ProcessTables, processNumber, () => new Array<ProcessBlock>());
+                                const table = adventure.ProcessTables.getOrCreate(processNumber, () => new Array<ProcessBlock>());
                                 table.push(block);
                             }
                             block.Commands.push(new Command(tokens.shift(), tokens.map(t => parseInt(t))));
@@ -319,20 +219,11 @@ class PawReader {
         return adventure;
     }
 
-    private static GetOrCreate<T1, T2>(map: Map<T1, T2>, key: T1, creator: (() => T2)): T2 {
-        let value = map.get(key);
-        if (!value) {
-            value = creator();
-            map.set(key, value);
-        }
-        return value;
-    }
-
     private static ParseKeyedDescription<T1>(map: Map<number, T1>, line: string, description: string, keyLineStart: string, creator: (description: string) => T1): void {
         if (line.startsWith(keyLineStart)) {
             const key = parseInt(line.substring(keyLineStart.length));
             if (description.trim() != '') {
-                PawReader.GetOrCreate(map, key, () => creator(description));
+                map.getOrCreate(key, () => creator(description));
             }
         } else {
             throw new Error(`Unexpected line in ${keyLineStart} section '${line}'`);

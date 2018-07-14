@@ -6,6 +6,6 @@
         "outFile": "dist/combined.js"
     },
     "include": [
-        "src/*"
+        "src/**/*.ts"
     ]
 }
