@@ -30,6 +30,17 @@ class Command {
     }
 }
 
+class ProcessBlock {
+    public Verb: string;
+    public Noun: string;
+    public Commands = new Array<Command>();
+
+    constructor(verb: string, noun: string) {
+        this.Verb = verb;
+        this.Noun = noun;
+    }
+}
+
 class PawAdventureDefinition {
     public Defaults = new Defaults();
     public Locations = new Map<number, GameLocation>();
@@ -37,6 +48,7 @@ class PawAdventureDefinition {
     public Meta = new Meta();
     public Objects = new Map<number, GameObject>();
     public Responses = new Map<string, Map<string, Array<Command>>>();
+    public ProcessTables = new Map<number, Array<ProcessBlock>>();
     public SystemMessages = new Map<number, string>();
     public Vocabulary = new Map<string, VocabDefinition>();
 }
@@ -114,12 +126,18 @@ class PawReader {
     public static async Parse(source: string[]): Promise<PawAdventureDefinition> {
         const adventure = new PawAdventureDefinition();
         let section = SourceSection.Preamble;
+        let processNumber = 0;
 
         for (let i = 0; i < source.length; i++) {
             let line = source[i].trim();
             if (line === '' || line.startsWith('-----')) continue;
 
-            const newSection = sectionHeadings.get(line.toUpperCase());
+            let newSection = sectionHeadings.get(line.toUpperCase());
+            const processTokens = line.split(' ').filter(x => x !== '');
+            if (processTokens[0] === 'PROCESS') {
+                newSection = SourceSection.Process;
+                processNumber = parseInt(processTokens[1]);
+            }
             if (newSection) {
                 section = newSection;
                 continue;
@@ -224,6 +242,23 @@ class PawReader {
                         commands.push(new Command(actionTokens[0], actionTokens.slice(1).map(t => parseInt(t))));
                         actionLine = source[++i];
                     } while(actionLine.trim() !== '');
+                    break;
+                }
+                case SourceSection.Process: {
+                    let block: ProcessBlock = null;
+                    do {
+                        line = source[i];
+                        let tokens = line.split(' ').filter(x => x !== '');
+                        if (tokens.length > 0) {
+                            const isNewBlock= line[0] != ' ';
+                            if (isNewBlock) {
+                                block = new ProcessBlock(tokens.shift(), tokens.shift());
+                                const table = PawReader.GetOrCreate(adventure.ProcessTables, processNumber, () => new Array<ProcessBlock>());
+                                table.push(block);
+                            }
+                            block.Commands.push(new Command(tokens.shift(), tokens.map(t => parseInt(t))));
+                        }
+                    } while(!source[++i].startsWith('------'));
                 }
             }
         }
