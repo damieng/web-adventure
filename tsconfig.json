@@ -1,11 +1,17 @@
 {
     "compilerOptions": {
-        "target": "es6",
-        "module": "system",
+        "outDir": "build/dist",
+        "module": "commonjs",
+        "target": "es5",
+        "lib": [ "es6", "dom"],
         "sourceMap": true,
-        "outFile": "dist/combined.js"
+        "rootDir": "src",
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noImplicitAny": true,
     },
-    "include": [
-        "src/**/*.ts"
-    ]
+    "exclude": [
+        "node_modules",
+        "build"
+    ],
 }

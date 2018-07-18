@@ -77,7 +77,7 @@ class PawReader {
                 }
                 case SourceSection.Messages: {
                     if (line.startsWith('Message')) {
-                        adventure.Messages[parseInt(line.substring(7))] = source[++i];
+                        adventure.Messages.set(parseInt(line.substring(7)), source[++i]);
                     } else {
                         throw new Error(`Unexpected line in Messages section '${line}'`);
                     }
@@ -85,7 +85,7 @@ class PawReader {
                 }
                 case SourceSection.SystemMessages: {
                     if (line.startsWith('System Message')) {
-                        adventure.SystemMessages[parseInt(line.substring(14))] = source[++i];
+                        adventure.SystemMessages.set(parseInt(line.substring(14)), source[++i]);
                     } else {
                         throw new Error(`Unexpected line in System Messages section '${line}'`);
                     }
@@ -164,7 +164,7 @@ class PawReader {
                     break;
                 }
                 case SourceSection.Process: {
-                    let block: ProcessBlock = null;
+                    let block: ProcessBlock | null = null;
                     do {
                         line = source[i];
                         const tokens = line.split(' ').filter(x => x !== '');
@@ -250,7 +250,7 @@ class PawReader {
         const vocab = new VocabDefinition();
         vocab.Id = parseInt(tokens[1]),
         vocab.Type = PawReader.GetVocabType(tokens[2]);
-        adventure.Vocabulary[tokens[0]] = vocab;
+        adventure.Vocabulary.set(tokens[0], vocab);
     }
 
     private static GetVocabType(input: string): VocabType {
