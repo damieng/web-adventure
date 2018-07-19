@@ -2,23 +2,23 @@
 
 namespace PAW {
     export class PAWAdventureDefinition {
-        public Charsets = new Array<Array<Glyph>>();
-        public UserDefinedGraphics = new Array<Glyph>();
-        public Shade = new Array<Glyph>();
+        public readonly Charsets = new Array<Array<Glyph>>();
+        public readonly UserDefinedGraphics = new Array<Glyph>();
+        public readonly Shade = new Array<Glyph>();
 
-        public Defaults = new Defaults();
-        public Locations = new Map<number, GameLocation>();
-        public Messages = new Map<number, string>();
-        public Meta = new Meta();
-        public Objects = new Map<number, GameObject>();
-        public Responses = new Map<string, Map<string, Array<Command>>>();
-        public ProcessTables = new Map<number, Array<ProcessBlock>>();
-        public SystemMessages = new Map<number, string>();
-        public Vocabulary = new Map<string, VocabDefinition>();
+        public readonly Defaults = new Defaults();
+        public readonly Locations = new Map<number, GameLocation>();
+        public readonly Messages = new Map<number, string>();
+        public readonly Meta = new Meta();
+        public readonly Objects = new Map<number, GameObject>();
+        public readonly Responses = new Map<string, Map<string, Array<Command>>>();
+        public readonly ProcessTables = new Map<number, Array<ProcessBlock>>();
+        public readonly SystemMessages = new Map<number, string>();
+        public readonly Vocabulary = new Map<string, VocabDefinition>();
     }
 
     export class Glyph {
-        public Data: Array<number>;
+        public readonly Data: Array<number>;
 
         constructor(data: Array<number>) {
             this.Data = data;

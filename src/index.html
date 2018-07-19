@@ -41,6 +41,8 @@ async function loadSource() {
 async function play() {
     const adventure = await PAW.PAWReader.Parse(byId('source').innerText.split('\n'));
     console.log(adventure);
+    const runner = new PAW.PAWRunner(adventure);
+    console.log(runner.Start())
 }
 </script>
 
