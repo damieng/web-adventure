@@ -1,4 +1,3 @@
-
 interface Map<K, V> {
     getOrCreate(key: K, creator: (() => V)):V;
 }

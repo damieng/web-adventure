@@ -27,17 +27,19 @@
 
 </body>
 
-<script src="../dist/combined.js"></script>
+<script src="../build/dist/combined.js"></script>
 <script>
+
 const byId = id => document.getElementById(id)
-loadSource();
+
+document.onload = d => loadSource();
 
 async function loadSource() {
-    byId('source').innerText = await PawReader.GetSource(byId('sourceUrl').value)
+    byId('source').innerText = await PAW.PAWReader.GetSource(byId('sourceUrl').value)
 }
 
-function play() {
-    const adventure = PawReader.Parse(byId('source').innerText.split('\n'));
+async function play() {
+    const adventure = await PAW.PAWReader.Parse(byId('source').innerText.split('\n'));
     console.log(adventure);
 }
 </script>
