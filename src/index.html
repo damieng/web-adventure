@@ -8,42 +8,66 @@
 </head>
 
 <body>
-
     <header>
         <h1>Web Adventure</h1>
+        <input type="text" id="sourceUrl" value="https://gist.githubusercontent.com/damieng/53406740db4af782c2375c63c4c62525/raw/e393f751be4c429e9d0dc0412744e9eb47e3aca4/magmoo11.unp">
+        <button onclick="start()">Start</button>
     </header>
 
     <content>
-        <div id="runSide">
-            <h2>Run</h2>
-            <button onclick="play()">Play</button>
+        <div id="playSide">
+            <h2>Playing</h2>
+            <div id="screen"></div>
         </div>
         <div id="sourceSide">
             <h2>Source</h2>
-            <input type="text" id="sourceUrl" value="https://gist.githubusercontent.com/damieng/53406740db4af782c2375c63c4c62525/raw/e393f751be4c429e9d0dc0412744e9eb47e3aca4/magmoo11.unp"> <button onclick="loadSource()">Load</button>
             <pre id="source" contenteditable>No source loaded.</pre>
         </div>
     </content>
-
 </body>
 
 <script src="../build/dist/combined.js"></script>
 <script>
+    const byId = id => document.getElementById(id)
+    const screen = byId('screen');
+    let runner = null;
+    let locationDescription = null;
 
-const byId = id => document.getElementById(id)
+    async function start() {
+        byId('source').innerText = await getPlainText(byId('sourceUrl').value);
+        const adventure = await PAW.PAWReader.Parse(byId('source').innerText.split('\n'));
+        console.log(adventure);
+        runner = new PAW.PAWRunner(adventure);
+        runner.Start();
+        displayResponse();
+    }
 
-document.onload = d => loadSource();
+    function displayResponse() {
+        console.log(runner.GameState);
+        if (locationDescription != runner.GameState.LocationDescription) {
+            appendResponseText(runner.GameState.LocationDescription);
+            locationDescription = runner.GameState.LocationDescription;
+        }
 
-async function loadSource() {
-    byId('source').innerText = await PAW.PAWReader.GetSource(byId('sourceUrl').value)
-}
+        if (runner.GameState.Response !== '')
+            appendResponseText(runner.GameState.Response);
+    }
 
-async function play() {
-    const adventure = await PAW.PAWReader.Parse(byId('source').innerText.split('\n'));
-    console.log(adventure);
-    const runner = new PAW.PAWRunner(adventure);
-    console.log(runner.Start())
-}
+    function appendResponseText(text) {
+        runner.BuildHTML(text, screen, (tag, text) => createTextElement(tag, text));
+    }
+
+    function createTextElement(tag, text) {
+        if (tag === '')
+            return document.createTextNode(text);
+
+        const element = document.createElement(tag);
+        if (text)
+            element.innerText = text;
+
+        return element;
+    }
+
 </script>
 
 </html>

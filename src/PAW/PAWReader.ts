@@ -237,15 +237,6 @@ namespace PAW {
                     throw new Error(`Unknown vocabulary type '${input}'`)
             }
         }
-
-        public static async GetSource(uri: string): Promise<string> {
-            const request = new Request(uri, {
-                headers: new Headers({ 'Content-Type': 'text/plain' })
-            });
-
-            const response = await fetch(request);
-            return response.text();
-        }
     }
 
     enum SourceSection {

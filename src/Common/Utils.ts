@@ -12,3 +12,12 @@ function GetOrCreate<K, V>(map: Map<K, V>, key: K, creator: (() => V)): V {
 }
 
 Map.prototype.getOrCreate = function(key, creator) { return GetOrCreate(this, key, creator); };
+
+async function getPlainText(uri: string): Promise<string> {
+    const request = new Request(uri, {
+        headers: new Headers({ 'Content-Type': 'text/plain' })
+    });
+
+    const response = await fetch(request);
+    return response.text();
+}

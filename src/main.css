@@ -8,8 +8,17 @@ content {
     display: flex;
 }
 
-#runSide, #sourceSide {
+#playSide, #sourceSide {
     flex: 1
+}
+
+#screen {
+    line-height: 1em;
+    white-space: pre-wrap;
+}
+
+#sourceUrl {
+    min-width: 50%;
 }
 
 #source {
