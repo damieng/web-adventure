@@ -15,19 +15,15 @@
     </header>
 
     <content>
-        <div id="playSide">
-            <h2>Playing</h2>
-            <div id="screen"></div>
-        </div>
-        <div id="sourceSide">
-            <h2>Source</h2>
-            <pre id="source" contenteditable>No source loaded.</pre>
-        </div>
+        <h2>Playing</h2>
+        <div id="screen"></div>
     </content>
 </body>
 
 <script src="../lib/system.js"></script>
 <script src="../dist/combined.js"></script>
-<script>SystemJS.import('index').then(r => r.startAdventure());</script>
+<script>
+let start = () => { };
+SystemJS.import('index').then(r => start = r.startAdventure);</script>
 
 </html>

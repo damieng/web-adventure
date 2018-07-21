@@ -6,7 +6,6 @@ const byId = (id: string) => document.getElementById(id);
 export async function startAdventure(): Promise<void> {
     const sourceUrl = (byId('sourceUrl') as HTMLInputElement).value;
     const source = await getPlainText(sourceUrl);
-    byId('source').innerText = source;
     const adventure = await Reader.Parse(source.split('\n'));
     const interact = new InteractWeb(adventure, byId('screen'));
     interact.Start();

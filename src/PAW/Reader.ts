@@ -1,6 +1,6 @@
 // WebAdventure - Copyright (c) Damien Guard. All rights reserved.
 
-import { Adventure, PlatformType, GameObject, GameLocation, Command, ProcessBlock, VocabDefinition, VocabType, Glyph } from "./Adventure";
+import { Adventure, PlatformType, GameObject, GameLocation, Command, ProcessBlock, VocabDefinition, VocabType, Glyph, Defaults } from "./Adventure";
 
 export class Reader {
     public static async Parse(source: string[]): Promise<Adventure> {
@@ -206,11 +206,19 @@ export class Reader {
             adventure.Meta.Extractor = line.substring(13).trim();
     }
 
+    private static readonly generalSetters = new Map<string, (a: Adventure, v: string) => void>([
+        ["Database version", (a, v) => a.Meta.DatabaseVersion = parseInt(v)],
+        ["Snapshot type", (a, v) => a.Meta.SnapshotType = v],
+        ["Default ink color", (a, v) => a.Defaults.InkColor = parseInt(v)],
+        ["Default paper color", (a, v) => a.Defaults.PaperColor = parseInt(v)],
+        ["Default border color", (a, v) => a.Defaults.BorderColor = parseInt(v)],
+    ]);
+
     private static ParseGeneralData(adventure: Adventure, line: string): void {
-        if (line.startsWith('Database version'))
-            adventure.Meta.DatabaseVersion = parseInt(line.substring(16));
-        if (line.startsWith('Snapshot type'))
-            adventure.Meta.SnapshotType = line.substring(13).trim();
+        const parts = line.split('  ').filter(s => s);
+        const setter = this.generalSetters.get(parts[0]);
+        if (setter)
+            setter(adventure, parts[1]);
     }
 
     private static ParseVocabulary(adventure: Adventure, line: string): void {

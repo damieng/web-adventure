@@ -4,16 +4,9 @@ body {
     font-family: Georgia;
 }
 
-content {
-    display: flex;
-}
-
-#playSide, #sourceSide {
-    flex: 1
-}
-
 #screen {
     line-height: 1em;
+    min-height: 100%;
     white-space: pre-wrap;
 }
 
