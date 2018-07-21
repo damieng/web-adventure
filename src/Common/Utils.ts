@@ -11,7 +11,8 @@ function GetOrCreate<K, V>(map: Map<K, V>, key: K, creator: (() => V)): V {
     return value;
 }
 
-Map.prototype.getOrCreate = function(key, creator) { return GetOrCreate(this, key, creator); };
+Map.prototype.getOrCreate = 
+    function(key: string, creator: (() => any)) { return GetOrCreate(this, key, creator); };
 
 async function getPlainText(uri: string): Promise<string> {
     const request = new Request(uri, {
@@ -20,4 +21,15 @@ async function getPlainText(uri: string): Promise<string> {
 
     const response = await fetch(request);
     return response.text();
+}
+
+function createText(tag: string, text?:string): Node {
+    if (tag === '')
+        return document.createTextNode(text);
+
+    const element = document.createElement(tag);
+    if (text)
+        element.innerText = text;
+
+    return element;
 }

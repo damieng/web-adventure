@@ -1,17 +1,20 @@
 {
     "compilerOptions": {
-        "outFile": "build/dist/combined.js",
         "module": "system",
         "target": "es5",
+        "outFile": "dist/combined.js",
         "lib": [ "es6", "dom"],
         "sourceMap": true,
         "rootDir": "src",
+        "declaration": true,
+        "removeComments": true,
         "noImplicitReturns": true,
         "noImplicitThis": true,
         "noImplicitAny": true,
     },
     "exclude": [
         "node_modules",
-        "build"
+        "dist"
     ],
+    "compileOnSave": true
 }

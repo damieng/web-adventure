@@ -26,48 +26,8 @@
     </content>
 </body>
 
-<script src="../build/dist/combined.js"></script>
-<script>
-    const byId = id => document.getElementById(id)
-    const screen = byId('screen');
-    let runner = null;
-    let locationDescription = null;
-
-    async function start() {
-        byId('source').innerText = await getPlainText(byId('sourceUrl').value);
-        const adventure = await PAW.PAWReader.Parse(byId('source').innerText.split('\n'));
-        console.log(adventure);
-        runner = new PAW.PAWRunner(adventure);
-        runner.Start();
-        displayResponse();
-    }
-
-    function displayResponse() {
-        console.log(runner.GameState);
-        if (locationDescription != runner.GameState.LocationDescription) {
-            appendResponseText(runner.GameState.LocationDescription);
-            locationDescription = runner.GameState.LocationDescription;
-        }
-
-        if (runner.GameState.Response !== '')
-            appendResponseText(runner.GameState.Response);
-    }
-
-    function appendResponseText(text) {
-        runner.BuildHTML(text, screen, (tag, text) => createTextElement(tag, text));
-    }
-
-    function createTextElement(tag, text) {
-        if (tag === '')
-            return document.createTextNode(text);
-
-        const element = document.createElement(tag);
-        if (text)
-            element.innerText = text;
-
-        return element;
-    }
-
-</script>
+<script src="../lib/system.js"></script>
+<script src="../dist/combined.js"></script>
+<script>SystemJS.import('index').then(r => r.startAdventure());</script>
 
 </html>
