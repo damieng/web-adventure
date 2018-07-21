@@ -4,4 +4,5 @@ import { Color } from "../Common/Color";
 
 export interface Platform {
     GetPalette(index: number): Color;
+    WasCentered(text: string): boolean;
 }

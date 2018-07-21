@@ -52,15 +52,26 @@ export class InteractWeb {
         let textContainer = container;
 
         for (let line of text.replace(/\{128}/g, ' ').split(/\^\{7\}/g)) {
-            for (let segment of line.match(/({\d+})|([^{}]+)/g) || ['']) {
-                const escape = (segment.match(/{(\d+)}/) || ['', ''])[1];
-                if (escape !== '' && mode === 'color') {
-                    textContainer = this.createColorSpan(parseInt(escape), container, textContainer);
-                    mode = '';
-                } else if (escape === '16') {
-                    mode = 'color';
-                } else {
-                    textContainer.appendChild(this.doc.createTextNode(segment));
+            if (line !== '') {
+                for (let segment of line.match(/({\d+})|([^{}]+)/g) || ['']) {
+                    const escape = (segment.match(/{(\d+)}/) || ['', ''])[1];
+                    if (escape !== '' && mode === 'color') {
+                        textContainer = this.createColorSpan(parseInt(escape), container, textContainer);
+                        mode = '';
+                    } else if (escape === '16') {
+                        mode = 'color';
+                    } else {
+                        const rawLine = line.replace(/{\d+}/g, '');
+                        if (this.platform.WasCentered(rawLine)) {
+                            const centered = this.doc.createElement('span');
+                            centered.innerText = segment.trim();
+                            centered.style.textAlign = 'center';
+                            centered.style.display = 'block';
+                            textContainer.appendChild(centered);
+                        } else {
+                            textContainer.appendChild(this.doc.createTextNode(segment));
+                        }
+                    }
                 }
             }
             textContainer.appendChild(this.doc.createElement('br'));
