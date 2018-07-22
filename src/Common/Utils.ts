@@ -33,3 +33,7 @@ function createText(tag: string, text?:string): Node {
 
     return element;
 }
+
+function randomIntFromRange(min: number, max: number): number {
+    return Math.floor(Math.random() * Math.floor(max-min)) + Math.floor(min);
+}

@@ -4,18 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Web Adventure</title>
+    <link href="https://fonts.googleapis.com/css?family=Fira+Sans+Condensed:400,700" rel="stylesheet">
     <link href="main.css" rel="stylesheet">
 </head>
 
 <body>
     <header>
-        <h1>Web Adventure</h1>
-        <input type="text" id="sourceUrl" value="https://gist.githubusercontent.com/damieng/53406740db4af782c2375c63c4c62525/raw/e393f751be4c429e9d0dc0412744e9eb47e3aca4/magmoo11.unp">
-        <button onclick="start()">Start</button>
+        <h1>Web Adventures</h1>
+        <p id="strapline">Play old retro text-adventures in your browser.</p>
+        <fieldset>
+            <legend>Game</legend>
+            <input type="text" id="sourceUrl" value="https://gist.githubusercontent.com/damieng/64aa9e5610bb7620f90dbe2ee1f53230/raw/3e37e570435447df178362f3be2599be1d5fc6c0/crystal-quest.unp">
+            <button onclick="start()">Start</button>
+        </fieldset>
+        <fieldset>
+            <legend>Options</legend>
+            <label>Fonts
+                <select>
+                    <option>Recommended</option>
+                    <option>Original blocks</option>
+                    <option>Original dots</option>
+                    <option>Browser defaults</option>
+                </select>
+            </label>
+            <label>Graphics
+                <select>
+                    <option>Recommended</option>
+                    <option>Original</option>
+                    <option>Upscaled</option>
+                    <option>Off</option>
+                </select>
+            </label>
+            <label>Screen
+                <select>
+                    <option>Recommended</option>
+                    <option>Scrolling</option>
+                    <option>Single</option>
+                </select>
+            </label>
+        </fieldset>
+        <fieldset>
+            <legend>State</legend>
+            <button>Save</button>
+            <button>Load</button>
+            <label>
+                <input id="remember" type="checkbox"> Remember
+            </label>
+        </fieldset>
+        <fieldset>
+            <legend>Debug</legend>
+            <label>Location
+                <select id="locations"></select>
+            </label>
+            <label>
+                <input id="logging" type="checkbox"> Logging
+            </label>
+        </fieldset>
     </header>
 
     <content>
-        <h2>Playing</h2>
         <div id="screen"></div>
     </content>
 </body>
@@ -23,7 +70,7 @@
 <script src="../lib/system.js"></script>
 <script src="../dist/combined.js"></script>
 <script>
-let start = () => { };
-SystemJS.import('index').then(r => start = r.startAdventure);</script>
+    let start = () => { };
+    SystemJS.import('index').then(r => start = r.startAdventure);</script>
 
 </html>

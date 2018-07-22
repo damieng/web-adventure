@@ -11,7 +11,7 @@ export class Reader {
 
     private static async ParseAdventure(adventure: Adventure, source: string[]): Promise<void> {
         let section = SourceSection.Preamble;
-        let processNumber = 0;
+        let processTable: Array<ProcessBlock> = null;
 
         for (let i = 0; i < source.length; i++) {
             let line = source[i].trim();
@@ -22,7 +22,8 @@ export class Reader {
             switch (processTokens[0]) {
                 case 'PROCESS': {
                     newSection = SourceSection.Process;
-                    processNumber = parseInt(processTokens[1]);
+                    const processNumber = parseInt(processTokens[1]);
+                    processTable = adventure.ProcessTables.getOrCreate(processNumber, () => new Array<ProcessBlock>());
                     break;
                 }
                 case 'Charset': {
@@ -37,7 +38,6 @@ export class Reader {
 
             switch (section) {
                 case SourceSection.Preamble: {
-                    Reader.ParsePreamble(adventure, line);
                     break;
                 }
                 case SourceSection.GeneralData: {
@@ -45,23 +45,15 @@ export class Reader {
                     break;
                 }
                 case SourceSection.Vocabulary: {
-                    Reader.ParseVocabulary(adventure, line);
+                    Reader.ParseVocabulary(adventure.Vocabulary, line);
                     break;
                 }
                 case SourceSection.Messages: {
-                    if (line.startsWith('Message')) {
-                        adventure.Messages.set(parseInt(line.substring(7)), source[++i]);
-                    } else {
-                        throw new Error(`Unexpected line in Messages section '${line}'`);
-                    }
+                    i = Reader.ParseMessage('Message', adventure.Messages, source, i);
                     break;
                 }
                 case SourceSection.SystemMessages: {
-                    if (line.startsWith('System Message')) {
-                        adventure.SystemMessages.set(parseInt(line.substring(14)), source[++i]);
-                    } else {
-                        throw new Error(`Unexpected line in System Messages section '${line}'`);
-                    }
+                    i = Reader.ParseMessage('System Message', adventure.SystemMessages, source, i);
                     break;
                 }
                 case SourceSection.Locations: {
@@ -69,20 +61,7 @@ export class Reader {
                     break;
                 }
                 case SourceSection.Connections: {
-                    if (line.startsWith('Location')) {
-                        const lineTokens = line.split(':');
-                        const locationId = parseInt(lineTokens[0].substring(8));
-                        const location = adventure.Locations.getOrCreate(locationId, () => new GameLocation(''));
-
-                        let connection = lineTokens[1];
-                        do {
-                            const tokens = connection.split(' ').filter(x => x !== '');
-                            location.Connections.set(tokens[0], parseInt(tokens[1]));
-                            connection = source[++i];
-                        } while (connection.trim() !== '');
-                    } else {
-                        throw new Error(`Unexpected line in Locations section '${line}'`);
-                    }
+                    i = Reader.ParseConnection(adventure.Locations, source, i);
                     break;
                 }
                 case SourceSection.ObjectNames: {
@@ -90,104 +69,159 @@ export class Reader {
                     break;
                 }
                 case SourceSection.ObjectWords: {
-                    const tokens = line.split(' ').filter(x => x !== '');
-                    if (tokens[0] === 'Object') {
-                        const objectId = parseInt(tokens[1]);
-                        const object = adventure.Objects.getOrCreate(objectId, () => new GameObject(''));
-                        for (var p = 2; p < tokens.length - 1; p += 2) {
-                            if ((tokens[p] !== '_') && (tokens[p + 1] !== '_')) {
-                                object.Words.set(tokens[p], parseInt(tokens[p + 1]));
-                            }
-                        }
-                    } else {
-                        throw new Error(`Unexpected line in Object Words section '${line}'`);
-                    }
+                    Reader.ParseObjectWords(adventure.Objects, line);
                     break;
                 }
                 case SourceSection.ObjectWeightAndType: {
-                    const tokens = line.split(':');
-                    if (tokens[0].startsWith('Object')) {
-                        const objectId = parseInt(tokens[0].substring(6));
-                        const object = adventure.Objects.getOrCreate(objectId, () => new GameObject(''));
-                        const weightTokens = tokens[1].split(' ').filter(x => x !== '');
-                        if (weightTokens[0] === 'weights') {
-                            object.Weighs = parseInt(weightTokens[1]);
-                            object.IsWearable = weightTokens.filter(t => t === 'W').length > 0;
-                            object.IsContainer = weightTokens.filter(t => t === 'C').length > 0;
-                        }
-                        else {
-                            throw new Error(`Unexpected line in Object Words weights token '${line}'`);
-                        }
-                    } else {
-                        throw new Error(`Unexpected line in Object Words section '${line}'`);
-                    }
+                    Reader.ParseObjectWeightAndType(adventure.Objects, line);
                     break;
                 }
                 case SourceSection.ResponseTable: {
-                    const tokens = line.split(' ').filter(x => x !== '');
-                    const nounTable = adventure.Responses.getOrCreate(tokens[0], () => new Map<string, Array<Command>>());
-                    const commands = nounTable.getOrCreate(tokens[1], () => new Array<Command>());
-
-                    let actionLine = tokens[2] + (tokens.length > 3 ? ' ' + tokens[3] : '');
-                    do {
-                        const actionTokens = actionLine.split(' ').filter(x => x !== '');
-                        commands.push(new Command(actionTokens[0], actionTokens.slice(1).map(t => parseInt(t))));
-                        actionLine = source[++i];
-                    } while (actionLine.trim() !== '');
+                    i = Reader.ParseResponseTable(adventure.Responses, source, i);
                     break;
                 }
                 case SourceSection.Process: {
-                    let block: ProcessBlock | null = null;
-                    do {
-                        line = source[i];
-                        const tokens = line.split(' ').filter(x => x !== '');
-                        if (tokens.length > 0) {
-                            const isNewBlock = line[0] != ' ';
-                            if (isNewBlock) {
-                                block = new ProcessBlock(tokens.shift(), tokens.shift());
-                                const table = adventure.ProcessTables.getOrCreate(processNumber, () => new Array<ProcessBlock>());
-                                table.push(block);
-                            }
-                            block.Commands.push(new Command(tokens.shift(), tokens.map(t => parseInt(t))));
-                        }
-                    } while (!source[++i].startsWith('------'));
+                    i = Reader.ParseProcessTable(processTable, source, i);
                     break;
                 }
                 case SourceSection.Charset: {
-                    let charIndex = 0;
-                    let charTable: Array<Glyph> = null;
-                    do {
-                        line = source[i];
-                        if (line.startsWith('static char ')) {
-                            charIndex = 0;
-                            const charId = line.substring(12, line.indexOf('['));
-                            switch (charId) {
-                                case 'udg_bits': {
-                                    charTable = adventure.UserDefinedGraphics;
-                                    break;
-                                }
-                                case 'shade_bits': {
-                                    charTable = adventure.Shade;
-                                    break;
-                                }
-                                default: {
-                                    charTable = new Array<Glyph>();
-                                    const fontIndex = parseInt(charId.substring(charId.lastIndexOf('_') + 1));
-                                    adventure.Charsets[fontIndex] = charTable;
-                                }
-                            }
-                        } else {
-                            const glyphTokens = line.split(',');
-                            if (glyphTokens.length > 7) {
-                                const glyphData = glyphTokens.map(t => parseInt(t)).filter(t => !isNaN(t));
-                                charTable[charIndex++] = new Glyph(glyphData);
-                            }
-                        }
-                    } while (++i < source.length);
+                    i = Reader.ParseCharset(adventure, source, i);
                     break;
                 }
             }
         }
+    }
+
+    private static ParseCharset(adventure: Adventure, source: string[], i: number) {
+        let charIndex = 0;
+        let charTable: Array<Glyph> = null;
+        do {
+            const line = source[i];
+            if (line.startsWith('static char ')) {
+                charIndex = 0;
+                const charId = line.substring(12, line.indexOf('['));
+                switch (charId) {
+                    case 'udg_bits': {
+                        charTable = adventure.UserDefinedGraphics;
+                        break;
+                    }
+                    case 'shade_bits': {
+                        charTable = adventure.Shade;
+                        break;
+                    }
+                    default: {
+                        charTable = new Array<Glyph>();
+                        const fontIndex = parseInt(charId.substring(charId.lastIndexOf('_') + 1));
+                        adventure.Charsets[fontIndex] = charTable;
+                    }
+                }
+            }
+            else {
+                const glyphTokens = line.split(',');
+                if (glyphTokens.length > 7) {
+                    const glyphData = glyphTokens.map(t => parseInt(t)).filter(t => !isNaN(t));
+                    charTable[charIndex++] = new Glyph(glyphData);
+                }
+            }
+        } while (++i < source.length);
+        return i;
+    }
+
+    private static ParseProcessTable(processTable: Array<ProcessBlock>, source: string[], i: number) {
+        let block: ProcessBlock | null = null;
+        do {
+            const line = source[i];
+            const tokens = line.split(' ').filter(x => x !== '');
+            if (tokens.length > 0) {
+                const isNewBlock = line[0] != ' ';
+                if (isNewBlock) {
+                    block = new ProcessBlock(tokens.shift(), tokens.shift());
+                    processTable.push(block);
+                }
+                block.Commands.push(new Command(tokens.shift(), tokens.map(t => parseInt(t))));
+            }
+        } while (++i < source.length && source[i] && !source[i].startsWith('------'));
+        return i;
+    }
+
+    private static ParseResponseTable(responses: Map<string, Map<string, Array<Command>>>, source: string[], i: number) {
+        const line = source[i];
+        const tokens = line.split(' ').filter(x => x !== '');
+        const nounTable = responses.getOrCreate(tokens[0], () => new Map<string, Array<Command>>());
+        const commands = nounTable.getOrCreate(tokens[1], () => new Array<Command>());
+        let actionLine = tokens[2] + (tokens.length > 3 ? ' ' + tokens[3] : '');
+        do {
+            const actionTokens = actionLine.split(' ').filter(x => x !== '');
+            commands.push(new Command(actionTokens[0], actionTokens.slice(1).map(t => parseInt(t))));
+            actionLine = source[++i];
+        } while (i < source.length && actionLine.trim() !== '');
+        return i;
+    }
+
+    private static ParseObjectWeightAndType(objects: Map<number, GameObject>, line: string) {
+        const tokens = line.split(':');
+        if (tokens[0].startsWith('Object')) {
+            const objectId = parseInt(tokens[0].substring(6));
+            const object = objects.getOrCreate(objectId, () => new GameObject(''));
+            const weightTokens = tokens[1].split(' ').filter(x => x !== '');
+            if (weightTokens[0] === 'weights') {
+                object.Weighs = parseInt(weightTokens[1]);
+                object.IsWearable = weightTokens.filter(t => t === 'W').length > 0;
+                object.IsContainer = weightTokens.filter(t => t === 'C').length > 0;
+            }
+            else {
+                throw new Error(`Unexpected line in Object Words weights token '${line}'`);
+            }
+        }
+        else {
+            throw new Error(`Unexpected line in Object Words section '${line}'`);
+        }
+    }
+
+    private static ParseObjectWords(objects: Map<number, GameObject>, line: string) {
+        const tokens = line.split(' ').filter(x => x !== '');
+        if (tokens[0] === 'Object') {
+            const objectId = parseInt(tokens[1]);
+            const object = objects.getOrCreate(objectId, () => new GameObject(''));
+            for (var p = 2; p < tokens.length - 1; p += 2) {
+                if ((tokens[p] !== '_') && (tokens[p + 1] !== '_')) {
+                    object.Words.set(tokens[p], parseInt(tokens[p + 1]));
+                }
+            }
+        }
+        else {
+            throw new Error(`Unexpected line in Object Words section '${line}'`);
+        }
+    }
+
+    private static ParseConnection(locations: Map<number, GameLocation>, source: string[], i: number): number {
+        const line = source[i];
+        if (line.startsWith('Location')) {
+            const lineTokens = line.split(':');
+            const locationId = parseInt(lineTokens[0].substring(8));
+            const location = locations.getOrCreate(locationId, () => new GameLocation(''));
+            let connection = lineTokens[1];
+            do {
+                const tokens = connection.split(' ').filter(x => x !== '');
+                location.Connections.set(tokens[0], parseInt(tokens[1]));
+                connection = source[++i];
+            } while (i < source.length && connection.trim() !== '');
+        }
+        else {
+            throw new Error(`Unexpected line in Locations/Connection section '${line}'`);
+        }
+        return i;
+    }
+
+    private static ParseMessage(prefix: string, map: Map<number, string>, source: string[], i: number): number {
+        const line = source[i];
+        if (line.startsWith(prefix)) {
+            map.set(parseInt(line.substring(prefix.length)), source[++i]);
+        }
+        else {
+            throw new Error(`Unexpected line in ${prefix} section '${line}'`);
+        }
+        return i;
     }
 
     private static ParseKeyedDescription<T1>(map: Map<number, T1>, line: string, description: string, keyLineStart: string, creator: (description: string) => T1): void {
@@ -199,11 +233,6 @@ export class Reader {
         } else {
             throw new Error(`Unexpected line in ${keyLineStart} section '${line}'`);
         }
-    }
-
-    private static ParsePreamble(adventure: Adventure, line: string): void {
-        if (line.startsWith('Extracted by'))
-            adventure.Meta.Extractor = line.substring(13).trim();
     }
 
     private static readonly generalSetters = new Map<string, (a: Adventure, v: string) => void>([
@@ -221,15 +250,15 @@ export class Reader {
             setter(adventure, parts[1]);
     }
 
-    private static ParseVocabulary(adventure: Adventure, line: string): void {
+    private static ParseVocabulary(vocabulary: Map<string, VocabDefinition>, line: string): void {
         const tokens = line.split(' ').filter(t => t != '');
         if (tokens.length != 3)
-            throw new Error(`Can't parse vocabulary line '${line}' - expect 3 parts`);
+            throw new Error(`Can't parse Vocabulary line '${line}' - expect 3 parts`);
 
-        const vocab = new VocabDefinition();
-        vocab.Id = parseInt(tokens[1]),
-            vocab.Type = Reader.GetVocabType(tokens[2]);
-        adventure.Vocabulary.set(tokens[0], vocab);
+        const vocabDefinition = new VocabDefinition();
+        vocabDefinition.Id = parseInt(tokens[1]);
+        vocabDefinition.Type = Reader.GetVocabType(tokens[2]);
+        vocabulary.set(tokens[0], vocabDefinition);
     }
 
     private static GetVocabType(input: string): VocabType {
@@ -281,4 +310,4 @@ const sectionHeadings = new Map([
     ["PROCESS", SourceSection.Process],
     ["GRAPHICS DATA", SourceSection.GraphicsData],
     ["CHARSET", SourceSection.Charset]
-])
+]);

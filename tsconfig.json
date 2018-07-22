@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "module": "system",
-        "target": "es5",
+        "target": "es6",
         "outFile": "dist/combined.js",
         "lib": [ "es6", "dom"],
         "sourceMap": true,

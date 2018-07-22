@@ -8,13 +8,13 @@ import { Platform } from '../Platforms/Platform';
 export class InteractWeb {
     private doc: HTMLDocument;
     private log: (text: any) => void;
-    private runner: Runner;
+    public runner: Runner;
     private platform: Platform = new Spectrum();
 
     constructor(private adventure: Adventure, private playArea: HTMLElement) {
-        this.runner = new Runner(adventure);
-        this.doc = playArea.ownerDocument;
         this.log = console.log;
+        this.runner = new Runner(adventure, this.log);
+        this.doc = playArea.ownerDocument;
         this.log(adventure);
         this.attachEvents();
     }
@@ -41,6 +41,7 @@ export class InteractWeb {
 
     private displayLocation(location: GameLocation): void {
         const locationDiv = this.doc.createElement('div');
+        locationDiv.classList.add('location');
         this.BuildHTML(location.Description, locationDiv);
         this.playArea.appendChild(locationDiv);
     }
