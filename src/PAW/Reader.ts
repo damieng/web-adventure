@@ -88,11 +88,19 @@ export class Reader {
                     i = Reader.ParseCharset(adventure, source, i);
                     break;
                 }
+                case SourceSection.GraphicsData: {
+                    i = Reader.ParseGraphics(adventure, source, i);
+                    break;
+                }
             }
         }
     }
 
-    private static ParseCharset(adventure: Adventure, source: string[], i: number) {
+    private static ParseGraphics(adventure: Adventure, source: string[], i: number): number {
+        return i;
+    }
+
+    private static ParseCharset(adventure: Adventure, source: string[], i: number): number {
         let charIndex = 0;
         let charTable: Array<Glyph> = null;
         do {
@@ -127,7 +135,7 @@ export class Reader {
         return i;
     }
 
-    private static ParseProcessTable(processTable: Array<ProcessBlock>, source: string[], i: number) {
+    private static ParseProcessTable(processTable: Array<ProcessBlock>, source: string[], i: number): number {
         let block: ProcessBlock | null = null;
         do {
             const line = source[i];
@@ -144,7 +152,7 @@ export class Reader {
         return i;
     }
 
-    private static ParseResponseTable(responses: Map<string, Map<string, Array<Command>>>, source: string[], i: number) {
+    private static ParseResponseTable(responses: Map<string, Map<string, Array<Command>>>, source: string[], i: number): number {
         const line = source[i];
         const tokens = line.split(' ').filter(x => x !== '');
         const nounTable = responses.getOrCreate(tokens[0], () => new Map<string, Array<Command>>());
@@ -158,7 +166,7 @@ export class Reader {
         return i;
     }
 
-    private static ParseObjectWeightAndType(objects: Map<number, GameObject>, line: string) {
+    private static ParseObjectWeightAndType(objects: Map<number, GameObject>, line: string): void {
         const tokens = line.split(':');
         if (tokens[0].startsWith('Object')) {
             const objectId = parseInt(tokens[0].substring(6));
@@ -178,7 +186,7 @@ export class Reader {
         }
     }
 
-    private static ParseObjectWords(objects: Map<number, GameObject>, line: string) {
+    private static ParseObjectWords(objects: Map<number, GameObject>, line: string): void {
         const tokens = line.split(' ').filter(x => x !== '');
         if (tokens[0] === 'Object') {
             const objectId = parseInt(tokens[1]);
@@ -213,10 +221,18 @@ export class Reader {
         return i;
     }
 
+    private static DecodeText(text: string): string {
+        // TODO: More characters, compression
+        return text
+            .replace(/(?<!\\)\^/g, '\n')    // ^   => newline
+            .replace(/\{7\}/g, '\n')        // {7} => newline
+            .replace(/\\(["^{])/g, '$1');   // \x  => x (for " ^ and {
+    }
+
     private static ParseMessage(prefix: string, map: Map<number, string>, source: string[], i: number): number {
         const line = source[i];
         if (line.startsWith(prefix)) {
-            map.set(parseInt(line.substring(prefix.length)), source[++i]);
+            map.set(parseInt(line.substring(prefix.length)), Reader.DecodeText(source[++i]));
         }
         else {
             throw new Error(`Unexpected line in ${prefix} section '${line}'`);
@@ -228,7 +244,7 @@ export class Reader {
         if (line.startsWith(keyLineStart)) {
             const key = parseInt(line.substring(keyLineStart.length));
             if (description.trim() != '') {
-                map.getOrCreate(key, () => creator(description));
+                map.getOrCreate(key, () => creator(Reader.DecodeText(description)));
             }
         } else {
             throw new Error(`Unexpected line in ${keyLineStart} section '${line}'`);

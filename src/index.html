@@ -14,7 +14,7 @@
         <p id="strapline">Play old retro text-adventures in your browser.</p>
         <fieldset>
             <legend>Game</legend>
-            <input type="text" id="sourceUrl" value="https://gist.githubusercontent.com/damieng/64aa9e5610bb7620f90dbe2ee1f53230/raw/3e37e570435447df178362f3be2599be1d5fc6c0/crystal-quest.unp">
+            <input type="text" id="sourceUrl" value="https://raw.githubusercontent.com/damieng/text-adventure-resources/master/PAW/Decompiled/CrystalQuest.unp">
             <button onclick="start()">Start</button>
         </fieldset>
         <fieldset>
@@ -41,6 +41,10 @@
                     <option>Scrolling</option>
                     <option>Single</option>
                 </select>
+            </label>
+            <label>
+                <input type="checkbox" id="uptalk">
+                Smart text symbols
             </label>
         </fieldset>
         <fieldset>
@@ -71,6 +75,6 @@
 <script src="../dist/combined.js"></script>
 <script>
     let start = () => { };
-    SystemJS.import('index').then(r => start = r.startAdventure);</script>
-
+    SystemJS.import('index').then(r => start = r.startAdventure);
+</script>
 </html>

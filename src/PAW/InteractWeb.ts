@@ -2,14 +2,16 @@
 
 import { Spectrum } from '../Platforms/Spectrum';
 import { Runner } from './Runner';
-import { Adventure, GameLocation } from './Adventure';
+import { Adventure, GameLocation, TextState, EscapeCode } from './Adventure';
 import { Platform } from '../Platforms/Platform';
+
 
 export class InteractWeb {
     private doc: HTMLDocument;
     private log: (text: any) => void;
     public runner: Runner;
     private platform: Platform = new Spectrum();
+    private textState: TextState;
 
     constructor(private adventure: Adventure, private playArea: HTMLElement) {
         this.log = console.log;
@@ -40,50 +42,88 @@ export class InteractWeb {
     }
 
     private displayLocation(location: GameLocation): void {
+        if (location == null) return;
+        
         const locationDiv = this.doc.createElement('div');
         locationDiv.classList.add('location');
         this.BuildHTML(location.Description, locationDiv);
         this.playArea.appendChild(locationDiv);
     }
 
+    private processEscapeSequence(escapeSequence: EscapeCode[]): TextState {
+        const newTextState = Object.assign(this.textState);
+        let lastEscapeCode: EscapeCode = null;
+        for (let escape of escapeSequence) {
+            switch (lastEscapeCode) {
+                case EscapeCode.Paper:
+                    newTextState.PaperColor = escape;
+                    lastEscapeCode = null;
+                    break;
+                case EscapeCode.Ink:
+                    newTextState.InkColor = escape;
+                    lastEscapeCode = null;
+                    break;
+                case EscapeCode.Bright:
+                    newTextState.BrightState = escape;
+                    lastEscapeCode = null;
+                    break;
+                case EscapeCode.Flash:
+                    newTextState.FlashState = escape;
+                    lastEscapeCode = null;
+                    break;
+                case EscapeCode.Inverse:
+                    newTextState.InverseState = escape;
+                    lastEscapeCode = null;
+                    break;
+                default: {
+                    switch (escape) {
+                        case EscapeCode.Charset0:
+                        case EscapeCode.Charset1:
+                        case EscapeCode.Charset2:
+                        case EscapeCode.Charset3:
+                        case EscapeCode.Charset4:
+                        case EscapeCode.Charset5:
+                            newTextState.CharacterSet = escape;
+                            break;
+                    }
+                }
+            }
+        }
+        return newTextState;
+    }
+
     public BuildHTML(text: string, container: HTMLElement): void {
         if (!text) return;
 
-        let mode = '';
+        const lines = text.split('\n');
+        let textState = this.textState;
         let textContainer = container;
 
-        for (let line of text.replace(/\{128}/g, ' ').split(/\^\{7\}/g)) {
-            if (line !== '') {
-                for (let segment of line.match(/({\d+})|([^{}]+)/g) || ['']) {
-                    const escape = (segment.match(/{(\d+)}/) || ['', ''])[1];
-                    if (escape !== '' && mode === 'color') {
-                        textContainer = this.createColorSpan(parseInt(escape), container, textContainer);
-                        mode = '';
-                    } else if (escape === '16') {
-                        mode = 'color';
-                    } else {
-                        const rawLine = line.replace(/{\d+}/g, '');
-                        if (this.platform.WasCentered(rawLine)) {
-                            const centered = this.doc.createElement('span');
-                            centered.innerText = segment.trim();
-                            centered.style.textAlign = 'center';
-                            centered.style.display = 'block';
-                            textContainer.appendChild(centered);
-                        } else {
-                            textContainer.appendChild(this.doc.createTextNode(segment));
-                        }
-                    }
+        for (let line of lines) {
+            const segments = line.match(/({\d+})+|([^{]*)/g).filter(s => s != null);
+            for (let segment of segments) {
+                if (segment.indexOf('{') == -1) {
+                    textContainer.appendChild(this.doc.createTextNode(segment));
+                } else {
+                    const escapeSequence = segment.split('{').map(p => parseInt(p)).filter(e => !isNaN(e));
+                    textState = this.processEscapeSequence(escapeSequence);
+                    const styledSpan = this.createStyledSpan(textState);
+                    textContainer.appendChild(styledSpan);                    
+                    textContainer = styledSpan;
                 }
             }
             textContainer.appendChild(this.doc.createElement('br'));
         }
     }
 
-    private createColorSpan(paletteIndex: number, container: HTMLElement, textContainer: HTMLElement): HTMLElement {
-        const coloredSpan = this.doc.createElement('span');
-        coloredSpan.style.color = this.platform.GetPalette(paletteIndex).toRgb();
-        container.appendChild(coloredSpan);
-        textContainer = coloredSpan;
-        return textContainer;
+    private createStyledSpan(s: TextState): HTMLSpanElement {
+        const styledSpan = this.doc.createElement('span');
+        const ink = this.platform.GetPalette(s.InkColor + s.BrightState * 16).toRgb();
+        const paper = this.platform.GetPalette(s.PaperColor + s.BrightState * 16).toRgb();
+        styledSpan.style.color = s.InverseState ? paper : ink;
+        styledSpan.style.backgroundColor = s.InverseState ? ink : paper;
+        styledSpan.classList.add(`charset${s.CharacterSet}`);
+        // TODO: Flash & Over
+        return styledSpan;
     }
 }

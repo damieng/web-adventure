@@ -32,7 +32,7 @@ export class Glyph {
     }
 }
 
-export class Defaults {
+export class TextState {
     public CharacterSet: number;
     public InkColor: number;
     public PaperColor: number;
@@ -41,6 +41,9 @@ export class Defaults {
     public InverseState: number;
     public OverState: number;
     public BorderColor: number;
+}
+
+export class Defaults extends TextState {    
 }
 
 export class GameLocation {
@@ -106,4 +109,19 @@ export enum VocabType {
     Pronoun,
     Preposition,
     Verb
+}
+
+export enum EscapeCode {
+    Charset0,
+    Charset1,
+    Charset2,
+    Charset3,
+    Charset4,
+    Charset5,
+    NewLine = 7,
+    Ink = 16,
+    Paper,
+    Flash,
+    Bright,
+    Inverse
 }
